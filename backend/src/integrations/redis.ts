@@ -1,7 +1,11 @@
 import IORedis from 'ioredis';
+import { getConfig } from '../config/env';
 let client: IORedis | undefined;
 export function getRedis() {
-    if (!client) client = new IORedis(process.env.REDIS_URL!, { maxRetriesPerRequest: null, lazyConnect: true });
+    if (!client) {
+        const config = getConfig();
+        client = new IORedis(config.REDIS_URL, { maxRetriesPerRequest: null, lazyConnect: true });
+    }
     return client;
 }
 export async function checkRedis() {

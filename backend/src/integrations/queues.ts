@@ -12,5 +12,5 @@ export function createQueue<T = unknown>(name: string) {
     });
 }
 export function enqueue<T>(queue: Queue<T>, name: string, data: T, options?: JobsOptions) {
-    return queue.add(name, data, options);
+    return queue.add(name as any, data as any, options);
 }

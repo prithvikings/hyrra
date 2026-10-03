@@ -23,3 +23,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     }
     return result.data;
 }
+
+let _config: Env | undefined;
+export const getConfig = (): Env => {
+    if (!_config) _config = loadEnv();
+    return _config;
+};

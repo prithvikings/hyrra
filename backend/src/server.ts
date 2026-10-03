@@ -1,17 +1,35 @@
 import { createApp } from './app';
-import { loadEnv } from './config/env';
+import { getConfig } from './config/env';
 import { logger } from './core/logger';
-const env = loadEnv();
+import { shutdown, registerCleanup } from './core/lifecycle';
+import { disconnectPrisma } from './db/prisma';
+import { closeRedis } from './integrations/redis';
+
+const env = getConfig();
 const app = createApp();
 const server = app.listen(env.PORT, () =>
     logger.info({ port: env.PORT, nodeEnv: env.NODE_ENV }, 'Hyrra backend started')
 );
-const shutdown = (signal: string) => {
-    logger.info({ signal }, 'Shutting down gracefully...');
-    server.close(() => {
-        logger.info('Server closed');
-        process.exit(0);
+
+registerCleanup(() => new Promise<void>((resolve, reject) => {
+    server.close((err) => {
+        if (err) reject(err);
+        else {
+            logger.info('HTTP server closed');
+            resolve();
+        }
     });
-};
+}));
+
+registerCleanup(async () => {
+    await closeRedis();
+    logger.info('Redis disconnected');
+});
+
+registerCleanup(async () => {
+    await disconnectPrisma();
+    logger.info('Prisma disconnected');
+});
+
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));

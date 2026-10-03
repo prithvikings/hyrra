@@ -1,1 +1,17 @@
-import {createApp} from "./app";import {loadEnv} from "./config/env";import {logger} from "./core/logger";const env=loadEnv();const app=createApp();const server=app.listen(env.PORT,()=>logger.info({port:env.PORT,nodeEnv:env.NODE_ENV},"Hyrra backend started"));const shutdown=(signal:string)=>{logger.info({signal},"Shutting down");server.close(()=>process.exit(0));};process.on("SIGINT",()=>shutdown("SIGINT"));process.on("SIGTERM",()=>shutdown("SIGTERM"));\n
+import { createApp } from './app';
+import { loadEnv } from './config/env';
+import { logger } from './core/logger';
+const env = loadEnv();
+const app = createApp();
+const server = app.listen(env.PORT, () =>
+    logger.info({ port: env.PORT, nodeEnv: env.NODE_ENV }, 'Hyrra backend started')
+);
+const shutdown = (signal: string) => {
+    logger.info({ signal }, 'Shutting down gracefully...');
+    server.close(() => {
+        logger.info('Server closed');
+        process.exit(0);
+    });
+};
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));

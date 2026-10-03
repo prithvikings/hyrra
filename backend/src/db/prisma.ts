@@ -1,1 +1,3 @@
-import { PrismaClient } from "@prisma/client";\nexport const prisma=new PrismaClient();\nexport const disconnectPrisma=()=>prisma.$disconnect();\n
+import { PrismaClient } from '@prisma/client';
+export const prisma = new PrismaClient();
+export const disconnectPrisma = () => prisma.$disconnect();

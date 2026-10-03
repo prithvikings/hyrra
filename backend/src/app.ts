@@ -1,1 +1,19 @@
-import express from "express";import pinoHttp from "pino-http";import {logger} from "./core/logger";import {errorHandler} from "./errors/error-handler";import {notFoundHandler} from "./middleware/not-found";import {healthRouter} from "./modules/health/health.routes";export function createApp(){const app=express();app.disable("x-powered-by");app.use(express.json({limit:"1mb"}));app.use(pinoHttp({logger}));app.use(healthRouter);app.use("/api/v1",(_req,res)=>res.json({success:true,data:{service:"hyrra-backend"}}));app.use(notFoundHandler);app.use(errorHandler);return app;}\n
+import express, { type Request, type Response } from 'express';
+import pinoHttp from 'pino-http';
+import { logger } from './core/logger';
+import { errorHandler } from './errors/error-handler';
+import { notFoundHandler } from './middleware/not-found';
+import { healthRouter } from './modules/health/health.routes';
+export function createApp() {
+    const app = express();
+    app.disable('x-powered-by');
+    app.use(express.json({ limit: '1mb' }));
+    app.use(pinoHttp({ logger }));
+    app.use(healthRouter);
+    app.use('/api/v1', (_req: Request, res: Response) =>
+        res.json({ success: true, data: { service: 'hyrra-backend' } })
+    );
+    app.use(notFoundHandler);
+    app.use(errorHandler);
+    return app;
+}

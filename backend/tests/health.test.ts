@@ -1,1 +1,18 @@
-import {describe,it,expect} from "vitest"; import request from "supertest"; import {createApp} from "../src/app"; describe("health",()=>{const app=createApp();it("returns process health",async()=>{const r=await request(app).get("/health");expect(r.status).toBe(200);expect(r.body.success).toBe(true);expect(r.body.data.status).toBe("ok");expect(r.body.data.timestamp).toMatch(/Z$/);});it("returns 404 shape",async()=>{const r=await request(app).get("/bad");expect(r.status).toBe(404);expect(r.body.error.code).toBe("ROUTE_NOT_FOUND");});});
+import { describe, it, expect } from 'vitest';
+import request from 'supertest';
+import { createApp } from '../src/app';
+describe('health', () => {
+    const app = createApp();
+    it('returns process health', async () => {
+        const r = await request(app).get('/health');
+        expect(r.status).toBe(200);
+        expect(r.body.success).toBe(true);
+        expect(r.body.data.status).toBe('ok');
+        expect(r.body.data.timestamp).toMatch(/Z$/);
+    });
+    it('returns 404 shape', async () => {
+        const r = await request(app).get('/bad');
+        expect(r.status).toBe(404);
+        expect(r.body.error.code).toBe('ROUTE_NOT_FOUND');
+    });
+});

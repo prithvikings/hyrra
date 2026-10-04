@@ -41,10 +41,12 @@ export type CanonicalJobInput = {
   salaryText?: string;
   skills: string[];
   sourceUrl?: string;
+  normalizedSourceUrl?: string;
+  descriptionSignature: string;
   postedAt?: Date;
   expiresAt?: Date;
   rawMetadata?: Record<string, unknown>;
-  dedupeKey: string;
+  dedupeFingerprint: string;
 };
 
 export const normalizeText = (value: string) => value.normalize('NFKC').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -57,6 +59,22 @@ export function normalizeLocation(value?: string) {
   if (!value) return undefined;
   const normalized = normalizeText(value);
   return normalized || undefined;
+}
+
+export function normalizeSourceUrl(value?: string) {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    url.hash = '';
+    const trackingParameters = new Set(['fbclid', 'gclid', 'ref', 'source', 'utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_term']);
+    for (const key of [...url.searchParams.keys()]) {
+      if (key.toLowerCase().startsWith('utm_') || trackingParameters.has(key.toLowerCase())) url.searchParams.delete(key);
+    }
+    url.search = url.searchParams.toString();
+    return url.toString().replace(/\/$/u, '');
+  } catch {
+    return undefined;
+  }
 }
 
 export function normalizeWorkMode(value?: string): CanonicalJobInput['workMode'] {
@@ -95,9 +113,13 @@ export function normalizeExperienceLevel(value?: string): CanonicalJobInput['exp
 
 export function normalizeSkill(value: string) { return normalizeText(value); }
 
-export function buildDedupeKey(company: string, title: string, location?: string, employmentType?: string, experienceLevel?: string) {
+export function buildDedupeFingerprint(company: string, title: string, location?: string, employmentType?: string, experienceLevel?: string) {
   const material = [normalizeText(company), normalizeTitle(title), normalizeLocation(location) ?? '', employmentType ?? '', experienceLevel ?? ''].join('|');
   return createHash('sha256').update(material).digest('hex');
+}
+
+export function buildDescriptionSignature(description: string) {
+  return createHash('sha256').update(normalizeText(description)).digest('hex');
 }
 
 export function normalizeJob(input: RawJobRecord): CanonicalJobInput {
@@ -110,6 +132,7 @@ export function normalizeJob(input: RawJobRecord): CanonicalJobInput {
   const experienceLevel = normalizeExperienceLevel(raw.experienceLevel);
   if (raw.salaryMin !== undefined && raw.salaryMax !== undefined && raw.salaryMin > raw.salaryMax) throw new Error('salary_min_greater_than_max');
   const skills = [...new Set(raw.skills.map(normalizeSkill).filter(Boolean))];
+  const normalizedSourceUrl = normalizeSourceUrl(raw.sourceUrl);
   return {
     externalJobId: raw.externalJobId,
     title: raw.title,
@@ -127,9 +150,11 @@ export function normalizeJob(input: RawJobRecord): CanonicalJobInput {
     salaryText: raw.salaryText,
     skills,
     sourceUrl: raw.sourceUrl,
+    normalizedSourceUrl,
+    descriptionSignature: buildDescriptionSignature(raw.description),
     postedAt: raw.postedAt,
     expiresAt: raw.expiresAt,
     rawMetadata: raw.rawMetadata,
-    dedupeKey: buildDedupeKey(normalizedCompany, raw.title, raw.location, employmentType, experienceLevel)
+    dedupeFingerprint: buildDedupeFingerprint(normalizedCompany, raw.title, raw.location, employmentType, experienceLevel)
   };
 }

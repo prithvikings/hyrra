@@ -66,9 +66,8 @@ export function normalizeSourceUrl(value?: string) {
   try {
     const url = new URL(value);
     url.hash = '';
-    const trackingParameters = new Set(['fbclid', 'gclid', 'ref', 'source', 'utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_term']);
     for (const key of [...url.searchParams.keys()]) {
-      if (key.toLowerCase().startsWith('utm_') || trackingParameters.has(key.toLowerCase())) url.searchParams.delete(key);
+      if (key.toLowerCase().startsWith('utm_') || ['fbclid', 'gclid'].includes(key.toLowerCase())) url.searchParams.delete(key);
     }
     url.search = url.searchParams.toString();
     return url.toString().replace(/\/$/u, '');

@@ -1,3 +1,4 @@
+import type { Job } from 'bullmq';
 import { getPrisma } from '../../db/prisma';
 import { getResumeStorage } from '../../integrations/storage/resume-storage';
 import { createWorker } from '../../workers/worker-factory';
@@ -5,7 +6,8 @@ import { getDocumentParser } from './document-parser';
 import { parseResumeText } from './resume-parser';
 import { resumeProcessingQueue, type ResumeProcessingJob } from './resume.queue';
 
-export async function processResumeVersion({ resumeVersionId }: ResumeProcessingJob) {
+export async function processResumeVersion(job: Job<ResumeProcessingJob>) {
+  const { resumeVersionId } = job.data;
   const db = getPrisma();
   const version = await db.resumeVersion.findUnique({ where: { id: resumeVersionId } });
   if (!version) return;

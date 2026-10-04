@@ -7,6 +7,7 @@ import { healthRouter } from './modules/health/health.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { candidateRouter } from './modules/candidates/candidate.routes';
 import { resumeRouter } from './modules/resumes/resume.routes';
+import { jobRouter } from './modules/jobs/job.routes';
 
 export function createApp() {
   const app = express();
@@ -16,6 +17,7 @@ export function createApp() {
   app.use(healthRouter);
   app.use('/api/v1/auth', authRouter);
   app.get('/api/v1', (_req: Request, res: Response) => res.json({ success: true, data: { service: 'hyrra-backend' } }));
+  app.use('/api/v1', jobRouter);
   app.use('/api/v1', candidateRouter);
   app.use('/api/v1/resumes', resumeRouter);
   app.use(notFoundHandler);

@@ -10,6 +10,11 @@ datasource db {
 enum WorkMode { REMOTE HYBRID ONSITE }
 enum ExperienceType { FULL_TIME PART_TIME CONTRACT INTERNSHIP FREELANCE }
 enum ResumeVersionStatus { UPLOADED PROCESSING COMPLETED FAILED }
+enum JobSourceType { FIXTURE API CAREER_PAGE }
+enum JobEmploymentType { FULL_TIME PART_TIME CONTRACT INTERNSHIP TEMPORARY FREELANCE }
+enum JobExperienceLevel { INTERN ENTRY MID SENIOR LEAD MANAGER EXECUTIVE }
+enum JobStatus { ACTIVE EXPIRED ARCHIVED }
+enum IngestionRunStatus { RUNNING COMPLETED FAILED }
 
 model User {
   id           String           @id @default(uuid()) @db.Uuid
@@ -65,6 +70,7 @@ model Skill {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
   candidates CandidateSkill[]
+  jobs      JobSkill[]
 
   @@map("skills")
 }
@@ -174,4 +180,124 @@ model ResumeVersion {
   @@index([resumeId, status])
   @@index([createdAt])
   @@map("resume_versions")
+}
+
+model Company {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String   @db.VarChar(200)
+  normalizedName String   @unique @db.VarChar(200)
+  website        String?
+  logoUrl        String?
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  jobs           Job[]
+
+  @@index([name])
+  @@map("companies")
+}
+
+model JobSource {
+  id         String         @id @default(uuid()) @db.Uuid
+  name       String         @db.VarChar(120)
+  type       JobSourceType
+  baseUrl    String?
+  enabled    Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  records    JobSourceRecord[]
+  runs       JobIngestionRun[]
+
+  @@unique([name, type])
+  @@map("job_sources")
+}
+
+model Job {
+  id                 String             @id @default(uuid()) @db.Uuid
+  companyId          String             @db.Uuid
+  title              String             @db.VarChar(300)
+  normalizedTitle    String             @db.VarChar(300)
+  description        String
+  location           String?
+  normalizedLocation String?            @db.VarChar(300)
+  workMode           WorkMode?
+  employmentType     JobEmploymentType?
+  experienceLevel    JobExperienceLevel?
+  salaryMin          Int?
+  salaryMax          Int?
+  salaryCurrency     String?            @db.VarChar(3)
+  salaryText         String?
+  postedAt           DateTime?
+  expiresAt          DateTime?
+  lastSeenAt         DateTime            @default(now())
+  status             JobStatus           @default(ACTIVE)
+  dedupeKey          String              @unique @db.VarChar(512)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  sourceRecords      JobSourceRecord[]
+  skills             JobSkill[]
+
+  @@index([status, lastSeenAt])
+  @@index([companyId])
+  @@index([normalizedTitle])
+  @@index([normalizedLocation])
+  @@index([workMode])
+  @@index([employmentType])
+  @@index([experienceLevel])
+  @@index([createdAt])
+  @@map("jobs")
+}
+
+model JobSkill {
+  id        String   @id @default(uuid()) @db.Uuid
+  jobId     String   @db.Uuid
+  skillId   String   @db.Uuid
+  createdAt DateTime @default(now())
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, skillId])
+  @@index([skillId])
+  @@map("job_skills")
+}
+
+model JobSourceRecord {
+  id              String    @id @default(uuid()) @db.Uuid
+  jobId           String    @db.Uuid
+  sourceId        String    @db.Uuid
+  externalJobId   String    @db.VarChar(255)
+  externalUrl     String?
+  rawMetadata     Json?
+  firstSeenAt     DateTime  @default(now())
+  lastSeenAt      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  job             Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  source          JobSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, externalJobId])
+  @@index([jobId])
+  @@index([sourceId, lastSeenAt])
+  @@map("job_source_records")
+}
+
+model JobIngestionRun {
+  id           String             @id @default(uuid()) @db.Uuid
+  sourceId     String             @db.Uuid
+  startedAt    DateTime           @default(now())
+  completedAt  DateTime?
+  status       IngestionRunStatus @default(RUNNING)
+  fetchedCount Int                @default(0)
+  createdCount Int                @default(0)
+  updatedCount Int                @default(0)
+  skippedCount Int                @default(0)
+  failedCount  Int                @default(0)
+  errorCode    String?            @db.VarChar(100)
+  errorMessage String?            @db.VarChar(500)
+  source       JobSource          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId, startedAt])
+  @@index([status, startedAt])
+  @@map("job_ingestion_runs")
 }

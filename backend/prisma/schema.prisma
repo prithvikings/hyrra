@@ -231,7 +231,7 @@ model Job {
   expiresAt          DateTime?
   lastSeenAt         DateTime            @default(now())
   status             JobStatus           @default(ACTIVE)
-  dedupeKey          String              @unique @db.VarChar(512)
+  dedupeFingerprint  String              @db.VarChar(512)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   company            Company             @relation(fields: [companyId], references: [id], onDelete: Restrict)
@@ -245,6 +245,7 @@ model Job {
   @@index([workMode])
   @@index([employmentType])
   @@index([experienceLevel])
+  @@index([dedupeFingerprint])
   @@index([createdAt])
   @@map("jobs")
 }
@@ -263,22 +264,26 @@ model JobSkill {
 }
 
 model JobSourceRecord {
-  id              String    @id @default(uuid()) @db.Uuid
-  jobId           String    @db.Uuid
-  sourceId        String    @db.Uuid
-  externalJobId   String    @db.VarChar(255)
-  externalUrl     String?
-  rawMetadata     Json?
-  firstSeenAt     DateTime  @default(now())
-  lastSeenAt      DateTime  @default(now())
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  job             Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  source          JobSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  id                    String    @id @default(uuid()) @db.Uuid
+  jobId                 String    @db.Uuid
+  sourceId              String    @db.Uuid
+  externalJobId         String    @db.VarChar(255)
+  externalUrl           String?
+  normalizedExternalUrl String?   @db.VarChar(2048)
+  descriptionSignature  String?   @db.VarChar(64)
+  rawMetadata           Json?
+  firstSeenAt            DateTime  @default(now())
+  lastSeenAt             DateTime  @default(now())
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  job                   Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  source                JobSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
   @@unique([sourceId, externalJobId])
   @@index([jobId])
   @@index([sourceId, lastSeenAt])
+  @@index([normalizedExternalUrl])
+  @@index([descriptionSignature])
   @@map("job_source_records")
 }
 

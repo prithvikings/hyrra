@@ -9,7 +9,9 @@
     "worker": "tsx src/workers/resume-worker.ts",
     "job:worker": "tsx src/modules/jobs/job-ingestion-worker.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "pretypecheck": "npm run prisma:generate",
     "test": "vitest run",
+    "pretest": "npm run prisma:generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev"
   },
@@ -26,6 +28,7 @@
     "pdf-parse": "^1.1.4",
     "pino": "^9.9.4",
     "pino-http": "^10.5.0",
+    "supertest": "^7.1.1",
     "zod": "^4.1.8"
   },
   "devDependencies": {
@@ -34,7 +37,6 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^24.5.2",
     "@types/supertest": "^7.2.1",
-    "supertest": "^7.1.1",
     "tsx": "^4.19.1",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"

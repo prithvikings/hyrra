@@ -9,6 +9,7 @@ datasource db {
 
 enum WorkMode { REMOTE HYBRID ONSITE }
 enum ExperienceType { FULL_TIME PART_TIME CONTRACT INTERNSHIP FREELANCE }
+enum ResumeVersionStatus { UPLOADED PROCESSING COMPLETED FAILED }
 
 model User {
   id           String           @id @default(uuid()) @db.Uuid
@@ -52,6 +53,7 @@ model CandidateProfile {
   experience Experience[]
   education  Education[]
   preferences CandidatePreference?
+  resumes     Resume[]
 
   @@index([location])
   @@map("candidate_profiles")
@@ -132,4 +134,44 @@ model CandidatePreference {
   profile        CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@map("candidate_preferences")
+}
+
+model Resume {
+  id           String          @id @default(uuid()) @db.Uuid
+  profileId    String          @db.Uuid
+  name         String          @db.VarChar(160)
+  targetRole   String?         @db.VarChar(160)
+  isDefault    Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  profile      CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  versions     ResumeVersion[]
+
+  @@index([profileId, isDefault])
+  @@index([profileId, updatedAt])
+  @@map("resumes")
+}
+
+model ResumeVersion {
+  id               String             @id @default(uuid()) @db.Uuid
+  resumeId         String             @db.Uuid
+  version          Int
+  originalFilename String             @db.VarChar(255)
+  mimeType         String             @db.VarChar(127)
+  storageKey       String             @unique @db.VarChar(512)
+  fileSize         BigInt
+  status           ResumeVersionStatus @default(UPLOADED)
+  extractedText    String?
+  parsedData       Json?
+  parsingMetadata  Json?
+  failureCode      String?            @db.VarChar(100)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  resume           Resume             @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@unique([resumeId, version])
+  @@index([resumeId, version])
+  @@index([resumeId, status])
+  @@index([createdAt])
+  @@map("resume_versions")
 }

@@ -1,7 +1,27 @@
-import type { Prisma, PrismaClient } from '@prisma/client';
+import type { JobEmploymentType, JobExperienceLevel, JobStatus, JobSourceType, Prisma, PrismaClient, WorkMode } from '@prisma/client';
 import { getPrisma } from '../../db/prisma';
 import { resolveFreshness } from './job-freshness';
 import type { CanonicalJobInput } from './job-normalizer';
+
+export type JobListFilters = {
+  location?: string;
+  workMode?: WorkMode;
+  employmentType?: JobEmploymentType;
+  experienceLevel?: JobExperienceLevel;
+  sourceId?: string;
+  status?: JobStatus;
+  page: number;
+  limit: number;
+};
+
+function hasStrongCrossSourceEvidence(
+  candidate: { sourceRecords: Array<{ normalizedExternalUrl: string | null; descriptionSignature: string | null }> },
+  input: CanonicalJobInput
+) {
+  if (input.normalizedSourceUrl && candidate.sourceRecords.some((record) => record.normalizedExternalUrl === input.normalizedSourceUrl)) return true;
+  if (candidate.sourceRecords.some((record) => record.descriptionSignature === input.descriptionSignature)) return true;
+  return false;
+}
 
 export class JobRepository {
   constructor(private readonly db: PrismaClient = getPrisma()) {}
@@ -15,8 +35,17 @@ export class JobRepository {
       });
 
       const existingSource = await tx.jobSourceRecord.findUnique({ where: { sourceId_externalJobId: { sourceId, externalJobId: input.externalJobId } } });
-      const existingByDedupe = await tx.job.findUnique({ where: { dedupeKey: input.dedupeKey } });
-      const jobId = existingSource?.jobId ?? existingByDedupe?.id;
+      let existingCrossSourceJob: { id: string } | null = null;
+
+      if (!existingSource) {
+        const candidates = await tx.job.findMany({
+          where: { dedupeFingerprint: input.dedupeFingerprint },
+          select: { id: true, sourceRecords: { select: { normalizedExternalUrl: true, descriptionSignature: true } } }
+        });
+        existingCrossSourceJob = candidates.find((candidate) => hasStrongCrossSourceEvidence(candidate, input)) ?? null;
+      }
+
+      const jobId = existingSource?.jobId ?? existingCrossSourceJob?.id;
       const now = new Date();
       const jobData: Prisma.JobUncheckedCreateInput = {
         companyId: company.id,
@@ -36,15 +65,33 @@ export class JobRepository {
         expiresAt: input.expiresAt,
         lastSeenAt: now,
         status: resolveFreshness(input.expiresAt, now),
-        dedupeKey: input.dedupeKey
+        dedupeFingerprint: input.dedupeFingerprint
       };
 
-      const job = jobId ? await tx.job.update({ where: { id: jobId }, data: jobData }) : await tx.job.create({ data: jobData });
+      const job = jobId
+        ? await tx.job.update({ where: { id: jobId }, data: jobData })
+        : await tx.job.create({ data: jobData });
 
       await tx.jobSourceRecord.upsert({
         where: { sourceId_externalJobId: { sourceId, externalJobId: input.externalJobId } },
-        create: { jobId: job.id, sourceId, externalJobId: input.externalJobId, externalUrl: input.sourceUrl, rawMetadata: input.rawMetadata, lastSeenAt: now },
-        update: { jobId: job.id, externalUrl: input.sourceUrl, rawMetadata: input.rawMetadata, lastSeenAt: now }
+        create: {
+          jobId: job.id,
+          sourceId,
+          externalJobId: input.externalJobId,
+          externalUrl: input.sourceUrl,
+          normalizedExternalUrl: input.normalizedSourceUrl,
+          descriptionSignature: input.descriptionSignature,
+          rawMetadata: input.rawMetadata,
+          lastSeenAt: now
+        },
+        update: {
+          jobId: job.id,
+          externalUrl: input.sourceUrl,
+          normalizedExternalUrl: input.normalizedSourceUrl,
+          descriptionSignature: input.descriptionSignature,
+          rawMetadata: input.rawMetadata,
+          lastSeenAt: now
+        }
       });
 
       for (const skill of input.skills) {
@@ -52,7 +99,7 @@ export class JobRepository {
         await tx.jobSkill.upsert({ where: { jobId_skillId: { jobId: job.id, skillId: skillRecord.id } }, create: { jobId: job.id, skillId: skillRecord.id }, update: {} });
       }
 
-      return { jobId: job.id, created: !existingSource && !existingByDedupe };
+      return { jobId: job.id, created: !existingSource && !existingCrossSourceJob };
     });
   }
 
@@ -60,13 +107,13 @@ export class JobRepository {
     return this.db.job.findUnique({ where: { id }, include: { company: true, skills: { include: { skill: true } }, sourceRecords: { include: { source: true } } } });
   }
 
-  async list(filters: { location?: string; workMode?: string; employmentType?: string; experienceLevel?: string; sourceId?: string; status?: string; page: number; limit: number }) {
+  async list(filters: JobListFilters) {
     const where: Prisma.JobWhereInput = {};
     if (filters.location) where.normalizedLocation = { contains: filters.location.toLowerCase().trim() };
-    if (filters.workMode) where.workMode = filters.workMode as never;
-    if (filters.employmentType) where.employmentType = filters.employmentType as never;
-    if (filters.experienceLevel) where.experienceLevel = filters.experienceLevel as never;
-    if (filters.status) where.status = filters.status as never;
+    if (filters.workMode) where.workMode = filters.workMode;
+    if (filters.employmentType) where.employmentType = filters.employmentType;
+    if (filters.experienceLevel) where.experienceLevel = filters.experienceLevel;
+    if (filters.status) where.status = filters.status;
     if (filters.sourceId) where.sourceRecords = { some: { sourceId: filters.sourceId } };
     const skip = (filters.page - 1) * filters.limit;
     const [items, total] = await this.db.$transaction([

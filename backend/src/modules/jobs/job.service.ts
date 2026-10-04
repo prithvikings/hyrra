@@ -1,15 +1,24 @@
+import type { JobEmploymentType, JobExperienceLevel, JobStatus, WorkMode } from '@prisma/client';
 import { AppError } from '../../errors/app-error';
-import { JobRepository } from './job.repository';
+import { JobRepository, type JobListFilters } from './job.repository';
+import type { JobListQuery } from './job.schemas';
 
 function getRepository() {
   return new JobRepository();
 }
 
-export async function listJobs(filters: { page?: number; limit?: number; location?: string; workMode?: string; employmentType?: string; experienceLevel?: string; sourceId?: string; status?: string }) {
-  const page = filters.page ?? 1;
-  const limit = filters.limit ?? 20;
-  const result = await getRepository().list({ ...filters, page, limit });
-  return { ...result, page, limit };
+export async function listJobs(filters: JobListQuery) {
+  const repositoryFilters: JobListFilters = {
+    ...filters,
+    workMode: filters.workMode as WorkMode | undefined,
+    employmentType: filters.employmentType as JobEmploymentType | undefined,
+    experienceLevel: filters.experienceLevel as JobExperienceLevel | undefined,
+    status: filters.status as JobStatus | undefined,
+    page: filters.page,
+    limit: filters.limit
+  };
+  const result = await getRepository().list(repositoryFilters);
+  return { ...result, page: filters.page, limit: filters.limit };
 }
 
 export async function getJob(id: string) {

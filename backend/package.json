@@ -7,7 +7,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/server.js",
     "worker": "tsx src/workers/resume-worker.ts",
-    "job:worker": "tsx src/workers/job-ingestion-worker.ts",
+    "job:worker": "tsx src/modules/jobs/job-ingestion-worker.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "prisma:generate": "prisma generate",

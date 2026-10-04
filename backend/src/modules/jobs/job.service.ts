@@ -1,17 +1,19 @@
 import { AppError } from '../../errors/app-error';
 import { JobRepository } from './job.repository';
 
-const repository = new JobRepository();
+function getRepository() {
+  return new JobRepository();
+}
 
 export async function listJobs(filters: { page?: number; limit?: number; location?: string; workMode?: string; employmentType?: string; experienceLevel?: string; sourceId?: string; status?: string }) {
   const page = filters.page ?? 1;
   const limit = filters.limit ?? 20;
-  const result = await repository.list({ ...filters, page, limit });
+  const result = await getRepository().list({ ...filters, page, limit });
   return { ...result, page, limit };
 }
 
 export async function getJob(id: string) {
-  const job = await repository.findById(id);
+  const job = await getRepository().findById(id);
   if (!job) throw new AppError('JOB_NOT_FOUND', 404, 'Job not found');
   return job;
 }

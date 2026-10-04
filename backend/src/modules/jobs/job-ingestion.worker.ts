@@ -1,12 +1,13 @@
 import { logger } from '../../core/logger';
 import { createWorker } from '../../workers/worker-factory';
 import { JobIngestionService } from './job-ingestion.service';
-import { FixtureJobSourceAdapter } from './fixture-source.adapter';
-import { JobSourceAdapterRegistry } from './job-source-adapter';
+import { createJobSourceAdapterRegistry } from './job-source-adapter';
 import { type JobIngestionJob } from './job-ingestion.queue';
 
 export function createJobIngestionService() {
-  const registry = new JobSourceAdapterRegistry().register(new FixtureJobSourceAdapter([]));
+  // Production composition intentionally starts with no fixture adapter.
+  // Real source adapters can be registered here as they become available.
+  const registry = createJobSourceAdapterRegistry();
   return new JobIngestionService(undefined, registry);
 }
 

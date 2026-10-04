@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDedupeKey, normalizeEmploymentType, normalizeExperienceLevel, normalizeJob, normalizeLocation, normalizeTitle, normalizeWorkMode } from '../src/modules/jobs/job-normalizer';
+import { buildDedupeFingerprint, buildDescriptionSignature, normalizeEmploymentType, normalizeExperienceLevel, normalizeJob, normalizeLocation, normalizeSourceUrl, normalizeTitle, normalizeWorkMode } from '../src/modules/jobs/job-normalizer';
 import { resolveFreshness } from '../src/modules/jobs/job-freshness';
 
 const base = { externalJobId: '1', title: 'Senior Software Engineer - Backend', company: { name: 'Acme Inc' }, description: 'Build backend systems', location: 'Remote', workMode: 'WFH', employmentType: 'FT', experienceLevel: 'Senior', salaryMin: 100000, salaryMax: 120000, salaryCurrency: 'usd', skills: ['TypeScript', ' TypeScript ', 'Node.js'] };
@@ -29,11 +29,24 @@ describe('job normalization', () => {
 });
 
 describe('deterministic deduplication', () => {
-  it('produces the same key for equivalent source representations', () => {
-    expect(buildDedupeKey('Acme Inc', 'Senior Software Engineer', 'Remote', 'FULL_TIME', 'SENIOR')).toBe(buildDedupeKey('ACME INC', 'senior software engineer', 'REMOTE', 'FULL_TIME', 'SENIOR'));
+  it('produces the same candidate fingerprint for equivalent source representations', () => {
+    expect(buildDedupeFingerprint('Acme Inc', 'Senior Software Engineer', 'Remote', 'FULL_TIME', 'SENIOR')).toBe(buildDedupeFingerprint('ACME INC', 'senior software engineer', 'REMOTE', 'FULL_TIME', 'SENIOR'));
   });
   it('keeps materially different locations distinct', () => {
-    expect(buildDedupeKey('Acme', 'Software Engineer', 'Bengaluru', 'FULL_TIME', 'MID')).not.toBe(buildDedupeKey('Acme', 'Software Engineer', 'Delhi', 'FULL_TIME', 'MID'));
+    expect(buildDedupeFingerprint('Acme', 'Software Engineer', 'Bengaluru', 'FULL_TIME', 'MID')).not.toBe(buildDedupeFingerprint('Acme', 'Software Engineer', 'Delhi', 'FULL_TIME', 'MID'));
+  });
+  it('does not treat the candidate fingerprint as sufficient identity', () => {
+    const first = normalizeJob({ ...base, externalJobId: 'a', description: 'Build backend systems', sourceUrl: 'https://jobs.example.com/a' });
+    const second = normalizeJob({ ...base, externalJobId: 'b', description: 'Lead a completely different platform team', sourceUrl: 'https://jobs.example.com/b' });
+    expect(first.dedupeFingerprint).toBe(second.dedupeFingerprint);
+    expect(first.descriptionSignature).not.toBe(second.descriptionSignature);
+    expect(first.normalizedSourceUrl).not.toBe(second.normalizedSourceUrl);
+  });
+  it('normalizes tracking parameters out of source URLs', () => {
+    expect(normalizeSourceUrl('https://jobs.example.com/role/123?utm_source=feed&utm_campaign=test&ref=home')).toBe('https://jobs.example.com/role/123');
+  });
+  it('creates deterministic description signatures', () => {
+    expect(buildDescriptionSignature(' Build backend systems ')).toBe(buildDescriptionSignature('build   BACKEND systems'));
   });
 });
 

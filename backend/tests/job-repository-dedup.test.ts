@@ -16,6 +16,7 @@ const input = normalizeJob({
 });
 
 function makeDb({ existingSource = null, candidates = [] }: { existingSource?: { jobId: string } | null; candidates?: unknown[] } = {}) {
+  const canonicalJobId = existingSource?.jobId ?? (candidates[0] as { id?: string } | undefined)?.id ?? 'job-1';
   const tx = {
     company: { upsert: vi.fn().mockResolvedValue({ id: 'company-1' }) },
     jobSourceRecord: {
@@ -24,7 +25,7 @@ function makeDb({ existingSource = null, candidates = [] }: { existingSource?: {
     },
     job: {
       findMany: vi.fn().mockResolvedValue(candidates),
-      update: vi.fn().mockResolvedValue({ id: existingSource?.jobId ?? 'job-1' }),
+      update: vi.fn().mockResolvedValue({ id: canonicalJobId }),
       create: vi.fn().mockResolvedValue({ id: 'job-1' })
     },
     skill: { upsert: vi.fn() },

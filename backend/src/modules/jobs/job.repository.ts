@@ -1,4 +1,4 @@
-import type { JobEmploymentType, JobExperienceLevel, JobStatus, JobSourceType, Prisma, PrismaClient, WorkMode } from '@prisma/client';
+import type { JobEmploymentType, JobExperienceLevel, JobStatus, Prisma, PrismaClient, WorkMode } from '@prisma/client';
 import { getPrisma } from '../../db/prisma';
 import { resolveFreshness } from './job-freshness';
 import type { CanonicalJobInput } from './job-normalizer';
@@ -14,7 +14,7 @@ export type JobListFilters = {
   limit: number;
 };
 
-function hasStrongCrossSourceEvidence(
+export function hasStrongCrossSourceEvidence(
   candidate: { sourceRecords: Array<{ normalizedExternalUrl: string | null; descriptionSignature: string | null }> },
   input: CanonicalJobInput
 ) {

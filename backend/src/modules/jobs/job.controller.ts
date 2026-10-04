@@ -10,7 +10,8 @@ const paramId = (req: Request) => {
 };
 
 export async function listJobs(req: Request, res: Response) {
-  const result = await service.listJobs(req.query as JobListQuery);
+  const query = req.query as unknown as JobListQuery;
+  const result = await service.listJobs(query);
   res.json({ success: true, data: result.items.map(service.toPublicJob), pagination: { page: result.page, limit: result.limit, total: result.total, totalPages: Math.ceil(result.total / result.limit) } });
 }
 

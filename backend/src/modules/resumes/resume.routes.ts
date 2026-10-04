@@ -6,7 +6,7 @@ import { resumeFileUpload } from './resume-upload.middleware';
 import { applyParsed, createResume, createVersion, deleteResume, deleteVersion, getParsed, getResume, getVersion, listResumes, listVersions, updateResume } from './resume.controller';
 const idParams = z.object({ id: z.string().uuid() });
 const versionParams = z.object({ id: z.string().uuid(), versionId: z.string().uuid() });
-const empty = z.object({}).passthrough(false);
+const empty = z.object({}).strict();
 const metadata = z.object({ name: z.string().trim().min(1).max(160), targetRole: z.string().trim().max(160).optional().nullable() });
 const update = z.object({ name: z.string().trim().min(1).max(160).optional(), targetRole: z.string().trim().max(160).optional().nullable(), isDefault: z.boolean().optional() }).refine((d) => Object.keys(d).length > 0);
 const apply = z.object({ personal: z.object({ fullName: z.string().trim().max(200).optional(), location: z.string().trim().max(200).optional(), websiteUrl: z.string().url().max(500).optional().nullable() }).optional(), skills: z.array(z.string().trim().min(1).max(100)).max(100).optional() }).refine((d) => Boolean(d.personal || d.skills));

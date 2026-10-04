@@ -61,13 +61,16 @@ export function normalizeLocation(value?: string) {
   return normalized || undefined;
 }
 
+const TRACKING_QUERY_PARAMS = new Set(['fbclid', 'gclid', 'ref', 'source', 'campaign']);
+
 export function normalizeSourceUrl(value?: string) {
   if (!value) return undefined;
   try {
     const url = new URL(value);
     url.hash = '';
     for (const key of [...url.searchParams.keys()]) {
-      if (key.toLowerCase().startsWith('utm_') || ['fbclid', 'gclid'].includes(key.toLowerCase())) url.searchParams.delete(key);
+      const normalizedKey = key.toLowerCase();
+      if (normalizedKey.startsWith('utm_') || TRACKING_QUERY_PARAMS.has(normalizedKey)) url.searchParams.delete(key);
     }
     url.search = url.searchParams.toString();
     return url.toString().replace(/\/$/u, '');

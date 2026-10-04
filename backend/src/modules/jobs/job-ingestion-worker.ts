@@ -1,7 +1,7 @@
-import { getConfig } from '../config/env';
-import { logger } from '../core/logger';
-import { getPrisma } from '../db/prisma';
-import { startJobIngestionWorker } from '../modules/jobs/job-ingestion.worker';
+import { getConfig } from '../../config/env';
+import { logger } from '../../core/logger';
+import { getPrisma } from '../../db/prisma';
+import { startJobIngestionWorker } from './job-ingestion.worker';
 
 getConfig();
 getPrisma();

@@ -1,4 +1,3 @@
-import type { JobEmploymentType, JobExperienceLevel, JobStatus, WorkMode } from '@prisma/client';
 import { AppError } from '../../errors/app-error';
 import { JobRepository, type JobListFilters } from './job.repository';
 import type { JobListQuery } from './job.schemas';
@@ -10,10 +9,6 @@ function getRepository() {
 export async function listJobs(filters: JobListQuery) {
   const repositoryFilters: JobListFilters = {
     ...filters,
-    workMode: filters.workMode as WorkMode | undefined,
-    employmentType: filters.employmentType as JobEmploymentType | undefined,
-    experienceLevel: filters.experienceLevel as JobExperienceLevel | undefined,
-    status: filters.status as JobStatus | undefined,
     page: filters.page,
     limit: filters.limit
   };

@@ -1,7 +1,56 @@
-import type { Request, Response } from 'express'; import * as s from './candidate.service';
-const user=(req:Request)=>{if(!req.userId)throw new Error('Authentication context missing');return req.userId;};
-export const profile=async(req:Request,res:Response)=>res.json({success:true,data:await s.getProfile(user(req))}); export const updateProfile=async(req:Request,res:Response)=>res.json({success:true,data:await s.updateProfile(user(req),req.body)});
-export const experience=async(req:Request,res:Response)=>res.json({success:true,data:await s.listExperience(user(req))}); export const createExperience=async(req:Request,res:Response)=>res.status(201).json({success:true,data:await s.createExperience(user(req),req.body)}); export const updateExperience=async(req:Request,res:Response)=>res.json({success:true,data:await s.updateExperience(user(req),req.params.id,req.body)}); export const deleteExperience=async(req:Request,res:Response)=>{await s.deleteExperience(user(req),req.params.id);res.status(204).send();};
-export const education=async(req:Request,res:Response)=>res.json({success:true,data:await s.listEducation(user(req))}); export const createEducation=async(req:Request,res:Response)=>res.status(201).json({success:true,data:await s.createEducation(user(req),req.body)}); export const updateEducation=async(req:Request,res:Response)=>res.json({success:true,data:await s.updateEducation(user(req),req.params.id,req.body)}); export const deleteEducation=async(req:Request,res:Response)=>{await s.deleteEducation(user(req),req.params.id);res.status(204).send();};
-export const skills=async(req:Request,res:Response)=>res.json({success:true,data:await s.listSkills(user(req))}); export const addSkill=async(req:Request,res:Response)=>res.status(201).json({success:true,data:await s.addSkill(user(req),req.body.name,req.body.proficiency)}); export const updateSkill=async(req:Request,res:Response)=>res.json({success:true,data:await s.updateSkill(user(req),req.params.id,req.body)}); export const deleteSkill=async(req:Request,res:Response)=>{await s.deleteSkill(user(req),req.params.id);res.status(204).send();};
-export const preferences=async(req:Request,res:Response)=>res.json({success:true,data:await s.getPreferences(user(req))}); export const updatePreferences=async(req:Request,res:Response)=>res.json({success:true,data:await s.updatePreferences(user(req),req.body)});
+import type { Request, Response } from 'express';
+import * as s from './candidate.service';
+
+const user = (req: Request) => {
+  if (!req.userId) throw new Error('Authentication context missing');
+  return req.userId;
+};
+
+const paramId = (req: Request): string => {
+  const { id } = req.params;
+  if (Array.isArray(id)) throw new Error('Invalid resource id');
+  return id;
+};
+
+export const profile = async (req: Request, res: Response) =>
+  res.json({ success: true, data: await s.getProfile(user(req)) });
+export const updateProfile = async (req: Request, res: Response) =>
+  res.json({ success: true, data: await s.updateProfile(user(req), req.body) });
+
+export const experience = async (req: Request, res: Response) =>
+  res.json({ success: true, data: await s.listExperience(user(req)) });
+export const createExperience = async (req: Request, res: Response) =>
+  res.status(201).json({ success: true, data: await s.createExperience(user(req), req.body) });
+export const updateExperience = async (req: Request, res: Response) =>
+  res.json({ success: true, data: await s.updateExperience(user(req), paramId(req), req.body) });
+export const deleteExperience = async (req: Request, res: Response) => {
+  await s.deleteExperience(user(req), paramId(req));
+  res.status(204).send();
+};
+
+export const education = async (req: Request, res: Response) =>
+  res.json({ success: true, data: await s.listEducation(user(req)) });
+export const createEducation = async (req: Request, res: Response) =>
+  res.status(201).json({ success: true, data: await s.createEducation(user(req), req.body) });
+export const updateEducation = async (req: Request, res: Response) =>
+  res.json({ success: true, data: await s.updateEducation(user(req), paramId(req), req.body) });
+export const deleteEducation = async (req: Request, res: Response) => {
+  await s.deleteEducation(user(req), paramId(req));
+  res.status(204).send();
+};
+
+export const skills = async (req: Request, res: Response) =>
+  res.json({ success: true, data: await s.listSkills(user(req)) });
+export const addSkill = async (req: Request, res: Response) =>
+  res.status(201).json({ success: true, data: await s.addSkill(user(req), req.body.name, req.body.proficiency) });
+export const updateSkill = async (req: Request, res: Response) =>
+  res.json({ success: true, data: await s.updateSkill(user(req), paramId(req), req.body) });
+export const deleteSkill = async (req: Request, res: Response) => {
+  await s.deleteSkill(user(req), paramId(req));
+  res.status(204).send();
+};
+
+export const preferences = async (req: Request, res: Response) =>
+  res.json({ success: true, data: await s.getPreferences(user(req)) });
+export const updatePreferences = async (req: Request, res: Response) =>
+  res.json({ success: true, data: await s.updatePreferences(user(req), req.body) });

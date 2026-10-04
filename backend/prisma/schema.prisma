@@ -7,10 +7,129 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum WorkMode { REMOTE HYBRID ONSITE }
+enum ExperienceType { FULL_TIME PART_TIME CONTRACT INTERNSHIP FREELANCE }
+
 model User {
-  id        String   @id @default(uuid()) @db.Uuid
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String           @id @default(uuid()) @db.Uuid
+  email        String           @unique @db.VarChar(320)
+  passwordHash String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  profile      CandidateProfile?
+  sessions     Session[]
 
   @@map("users")
+}
+
+model Session {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @db.Uuid
+  refreshTokenHash String   @unique
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model CandidateProfile {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @unique @db.Uuid
+  fullName    String?
+  headline    String?
+  bio         String?
+  location    String?
+  websiteUrl  String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills      CandidateSkill[]
+  experience Experience[]
+  education  Education[]
+  preferences CandidatePreference?
+
+  @@index([location])
+  @@map("candidate_profiles")
+}
+
+model Skill {
+  id        String           @id @default(uuid()) @db.Uuid
+  name      String           @unique @db.VarChar(100)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  candidates CandidateSkill[]
+
+  @@map("skills")
+}
+
+model CandidateSkill {
+  id          String          @id @default(uuid()) @db.Uuid
+  profileId   String          @db.Uuid
+  skillId     String          @db.Uuid
+  proficiency Int?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  profile     CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  skill       Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, skillId])
+  @@index([skillId])
+  @@map("candidate_skills")
+}
+
+model Experience {
+  id          String         @id @default(uuid()) @db.Uuid
+  profileId   String         @db.Uuid
+  company     String
+  title       String
+  description String?
+  location    String?
+  type        ExperienceType @default(FULL_TIME)
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  profile     CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, startDate])
+  @@map("experiences")
+}
+
+model Education {
+  id          String   @id @default(uuid()) @db.Uuid
+  profileId   String   @db.Uuid
+  institution String
+  degree      String?
+  field       String?
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  profile     CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, startDate])
+  @@map("education")
+}
+
+model CandidatePreference {
+  id             String    @id @default(uuid()) @db.Uuid
+  profileId      String    @unique @db.Uuid
+  desiredTitles  String[]
+  locations      String[]
+  workModes      WorkMode[]
+  minSalary      Int?
+  maxSalary      Int?
+  salaryCurrency String?   @db.VarChar(3)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  profile        CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_preferences")
 }

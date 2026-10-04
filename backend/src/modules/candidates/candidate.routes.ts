@@ -1,0 +1,8 @@
+import { Router } from 'express';
+import { validate } from '../../middleware/validate'; import { requireAuth } from '../auth/auth.middleware'; import * as c from './candidate.controller'; import * as v from './candidate.schemas';
+export const candidateRouter=Router(); candidateRouter.use(requireAuth);
+candidateRouter.get('/profile',validate(v.profileGetSchema),c.profile); candidateRouter.patch('/profile',validate(v.profileUpdateSchema),c.updateProfile);
+candidateRouter.get('/profile/experience',validate(v.listSchema),c.experience); candidateRouter.post('/profile/experience',validate(v.experienceCreateSchema),c.createExperience); candidateRouter.patch('/profile/experience/:id',validate(v.experienceUpdateSchema),c.updateExperience); candidateRouter.delete('/profile/experience/:id',validate(v.idSchema),c.deleteExperience);
+candidateRouter.get('/profile/education',validate(v.listSchema),c.education); candidateRouter.post('/profile/education',validate(v.educationCreateSchema),c.createEducation); candidateRouter.patch('/profile/education/:id',validate(v.educationUpdateSchema),c.updateEducation); candidateRouter.delete('/profile/education/:id',validate(v.idSchema),c.deleteEducation);
+candidateRouter.get('/profile/skills',validate(v.listSchema),c.skills); candidateRouter.post('/profile/skills',validate(v.skillCreateSchema),c.addSkill); candidateRouter.patch('/profile/skills/:id',validate(v.skillUpdateSchema),c.updateSkill); candidateRouter.delete('/profile/skills/:id',validate(v.idSchema),c.deleteSkill);
+candidateRouter.get('/profile/preferences',validate(v.listSchema),c.preferences); candidateRouter.patch('/profile/preferences',validate(v.preferencesSchema),c.updatePreferences);
